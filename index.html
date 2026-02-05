@@ -14,6 +14,9 @@
     button:hover { background:#1e4ed8; }
     .result { margin-top:20px; padding:15px; background:#f1f5f9; border-radius:6px; }
     .small { font-size:12px; color:#555; margin-top:10px; }
+    .sources { margin-top:20px; font-size:14px; }
+    .sources a { color:#2563eb; text-decoration:none; }
+    .sources a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -36,7 +39,7 @@
       <option value="electrique">Électrique</option>
     </select>
 
-    <label>Taux de change officiel (€ → DZD)</label>
+    <label>Taux de change (€ → DZD)</label>
     <input type="number" id="taux" placeholder="Ex: 150" />
 
     <button onclick="calculer()">Calculer</button>
@@ -44,8 +47,13 @@
     <div class="result" id="result" style="display:none"></div>
 
     <div class="small">
-      ⚠️ Calcul indicatif basé sur les règles générales (DD + TVA 19%).
-      Les Douanes peuvent réévaluer la valeur.
+      ⚠️ Calcul indicatif basé sur les règles générales (DD + TVA 19%). Les Douanes peuvent réévaluer la valeur.
+    </div>
+
+    <div class="sources">
+      <p>💱 Taux de change officiel (Banque d’Algérie) : <a href="https://www.bank-of-algeria.dz/taux-de-change-journalier/" target="_blank">Voir ici</a></p>
+      <p>💱 Taux du marché noir : <a href="https://www.algeprix.com/change/euro-dinar" target="_blank">Voir ici</a></p>
+      <p>📚 Sources officielles et informations sur le dédouanement : <a href="https://www.bank-of-algeria.dz/" target="_blank">Banque d'Algérie</a>, <a href="https://www.douane.gov.dz/" target="_blank">Direction Générale des Douanes Algérienne</a></p>
     </div>
   </div>
 
