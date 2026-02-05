@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculateur de dédouanement – Algérie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    .container { max-width:700px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,.1); }
+    h1 { font-size:22px; margin-bottom:10px; }
+    label { display:block; margin-top:15px; font-weight:bold; }
+    input, select { width:100%; padding:8px; margin-top:5px; }
+    button { margin-top:20px; padding:12px; width:100%; font-size:16px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1e4ed8; }
+    .result { margin-top:20px; padding:15px; background:#f1f5f9; border-radius:6px; }
+    .small { font-size:12px; color:#555; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculateur de dédouanement – Algérie</h1>
+
+    <label>Valeur CIF du véhicule (€)</label>
+    <input type="number" id="cif" placeholder="Ex: 10000" />
+
+    <label>Type de véhicule</label>
+    <select id="type">
+      <option value="neuf">Neuf</option>
+      <option value="moins3">Moins de 3 ans</option>
+    </select>
+
+    <label>Motorisation / Cylindrée</label>
+    <select id="motorisation">
+      <option value="essence_1800">Essence / Hybride ≤ 1800 cm³</option>
+      <option value="essence_plus">Essence / Hybride > 1800 cm³</option>
+      <option value="electrique">Électrique</option>
+    </select>
+
+    <label>Taux de change officiel (€ → DZD)</label>
+    <input type="number" id="taux" placeholder="Ex: 150" />
+
+    <button onclick="calculer()">Calculer</button>
+
+    <div class="result" id="result" style="display:none"></div>
+
+    <div class="small">
+      ⚠️ Calcul indicatif basé sur les règles générales (DD + TVA 19%).
+      Les Douanes peuvent réévaluer la valeur.
+    </div>
+  </div>
+
+<script>
+function calculer() {
+  const cif = parseFloat(document.getElementById('cif').value);
+  const type = document.getElementById('type').value;
+  const motorisation = document.getElementById('motorisation').value;
+  const taux = parseFloat(document.getElementById('taux').value);
+
+  if (isNaN(cif) || isNaN(taux)) {
+    alert('Veuillez remplir tous les champs');
+    return;
+  }
+
+  let tauxDD = 0;
+  if (motorisation === 'essence_1800') tauxDD = 0.15;
+  if (motorisation === 'essence_plus') tauxDD = 0.30;
+  if (motorisation === 'electrique') tauxDD = 0.05;
+
+  let droitsDouane = cif * tauxDD;
+  let tva = 0.19 * (cif + droitsDouane);
+  let totalTaxes = droitsDouane + tva;
+
+  // Réductions véhicules < 3 ans
+  if (type === 'moins3') {
+    if (motorisation === 'essence_1800') totalTaxes *= 0.5;
+    if (motorisation === 'essence_plus') totalTaxes *= 0.8;
+    if (motorisation === 'electrique') totalTaxes *= 0.2;
+  }
+
+  const totalDZD = totalTaxes * taux;
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').innerHTML = `
+    <strong>Droits & taxes estimés :</strong><br><br>
+    • Total en € : <b>${totalTaxes.toFixed(2)} €</b><br>
+    • Total en DZD : <b>${totalDZD.toLocaleString()} DZD</b>
+  `;
+}
+</script>
+</body>
+</html>
