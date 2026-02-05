@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
-    .container { max-width:700px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,.1); }
+    .container { max-width:760px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,.1); }
     h1 { font-size:22px; margin-bottom:10px; }
     label { display:block; margin-top:15px; font-weight:bold; }
     input, select { width:100%; padding:8px; margin-top:5px; }
@@ -16,14 +16,13 @@
     .small { font-size:12px; color:#555; margin-top:10px; }
     .sources { margin-top:20px; font-size:14px; }
     .sources a { color:#2563eb; text-decoration:none; }
-    .sources a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Calculateur de dédouanement – Algérie</h1>
 
-    <label>Valeur CIF du véhicule (€)</label>
+    <label>Prix d'achat + transport (€)</label>
     <input type="number" id="cif" placeholder="Ex: 10000" />
 
     <label>Type de véhicule</label>
@@ -39,21 +38,24 @@
       <option value="electrique">Électrique</option>
     </select>
 
-    <label>Taux de change (€ → DZD)</label>
-    <input type="number" id="taux" placeholder="Ex: 150" />
+    <label>Taux de change officiel (€ → DZD) – Douane</label>
+    <input type="number" id="taux_officiel" placeholder="Ex: 150" />
+
+    <label>Taux du marché noir (€ → DZD) – Achat véhicule</label>
+    <input type="number" id="taux_noir" placeholder="Ex: 230" />
 
     <button onclick="calculer()">Calculer</button>
 
     <div class="result" id="result" style="display:none"></div>
 
     <div class="small">
-      ⚠️ Calcul indicatif basé sur les règles générales (DD + TVA 19%). Les Douanes peuvent réévaluer la valeur.
+      ⚠️ Le dédouanement est calculé au taux officiel (Banque d’Algérie). Le prix de revient réel utilise le taux du marché parallèle.
     </div>
 
     <div class="sources">
-      <p>💱 Taux de change officiel (Banque d’Algérie) : <a href="https://www.bank-of-algeria.dz/taux-de-change-journalier/" target="_blank">Voir ici</a></p>
-      <p>💱 Taux du marché noir : <a href="https://www.algeprix.com/change/euro-dinar" target="_blank">Voir ici</a></p>
-      <p>📚 Sources officielles et informations sur le dédouanement : <a href="https://www.bank-of-algeria.dz/" target="_blank">Banque d'Algérie</a>, <a href="https://www.douane.gov.dz/" target="_blank">Direction Générale des Douanes Algérienne</a></p>
+      <p>💱 Taux officiel : <a href="https://www.bank-of-algeria.dz/taux-de-change-journalier/" target="_blank">Banque d’Algérie</a></p>
+      <p>💱 Taux marché noir (indicatif) : <a href="https://www.algeprix.com/change/euro-dinar" target="_blank">algeprix.com</a></p>
+      <p>📚 Référence douane : <a href="https://www.douane.gov.dz/" target="_blank">Direction Générale des Douanes</a></p>
     </div>
   </div>
 
@@ -62,9 +64,10 @@ function calculer() {
   const cif = parseFloat(document.getElementById('cif').value);
   const type = document.getElementById('type').value;
   const motorisation = document.getElementById('motorisation').value;
-  const taux = parseFloat(document.getElementById('taux').value);
+  const tauxOff = parseFloat(document.getElementById('taux_officiel').value);
+  const tauxNoir = parseFloat(document.getElementById('taux_noir').value);
 
-  if (isNaN(cif) || isNaN(taux)) {
+  if ([cif, tauxOff, tauxNoir].some(isNaN)) {
     alert('Veuillez remplir tous les champs');
     return;
   }
@@ -74,24 +77,29 @@ function calculer() {
   if (motorisation === 'essence_plus') tauxDD = 0.30;
   if (motorisation === 'electrique') tauxDD = 0.05;
 
-  let droitsDouane = cif * tauxDD;
-  let tva = 0.19 * (cif + droitsDouane);
-  let totalTaxes = droitsDouane + tva;
+  let dd = cif * tauxDD;
+  let tva = 0.19 * (cif + dd);
+  let tcs = 0.02 * (cif + dd + tva);
 
-  // Réductions véhicules < 3 ans
+  let taxes = dd + tva + tcs;
+
   if (type === 'moins3') {
-    if (motorisation === 'essence_1800') totalTaxes *= 0.5;
-    if (motorisation === 'essence_plus') totalTaxes *= 0.8;
-    if (motorisation === 'electrique') totalTaxes *= 0.2;
+    if (motorisation === 'essence_1800') taxes *= 0.5;
+    if (motorisation === 'essence_plus') taxes *= 0.8;
+    if (motorisation === 'electrique') taxes *= 0.2;
   }
 
-  const totalDZD = totalTaxes * taux;
+  const dedouanementDZD = taxes * tauxOff;
+  const achatDZD = cif * tauxNoir;
+  const totalReviens = dedouanementDZD + achatDZD;
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').innerHTML = `
-    <strong>Droits & taxes estimés :</strong><br><br>
-    • Total en € : <b>${totalTaxes.toFixed(2)} €</b><br>
-    • Total en DZD : <b>${totalDZD.toLocaleString()} DZD</b>
+    <strong>Résultat détaillé :</strong><br><br>
+    💼 Dédouanement (taux officiel) : <b>${dedouanementDZD.toLocaleString()} DZD</b><br>
+    💸 Achat + transport (marché noir) : <b>${achatDZD.toLocaleString()} DZD</b><br><br>
+    🧾 <strong>Prix de revient total :</strong><br>
+    <b style="font-size:18px">${totalReviens.toLocaleString()} DZD</b>
   `;
 }
 </script>
