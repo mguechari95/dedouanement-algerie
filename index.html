@@ -89,7 +89,7 @@ function calculer() {
     if (motorisation === 'electrique') taxes *= 0.2;
   }
 
-  const dedouanementDZD = taxes * tauxOff;
+  const dedouanementDZD = taxes * tauxOff + 25000;
   const achatDZD = cif * tauxNoir;
   const totalReviens = dedouanementDZD + achatDZD;
 
