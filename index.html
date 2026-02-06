@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Calculateur de dédouanement – Algérie</title>
+  <title>Calculateur de dédouanement – Algérie (DZD officiel)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
@@ -20,7 +20,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Calculateur de dédouanement – Algérie</h1>
+    <h1>Calculateur de dédouanement – Algérie (DZD officiel)</h1>
 
     <label>Prix d'achat + transport (€)</label>
     <input type="number" id="cif" placeholder="Ex: 10000" />
@@ -38,23 +38,19 @@
       <option value="electrique">Électrique</option>
     </select>
 
-    <label>Taux de change officiel (€ → DZD) – Douane</label>
+    <label>Taux de change officiel (€ → DZD)</label>
     <input type="number" id="taux_officiel" placeholder="Ex: 150" />
-
-    <label>Taux du marché noir (€ → DZD) – Achat véhicule</label>
-    <input type="number" id="taux_noir" placeholder="Ex: 230" />
 
     <button onclick="calculer()">Calculer</button>
 
     <div class="result" id="result" style="display:none"></div>
 
     <div class="small">
-      ⚠️ Le dédouanement est calculé au taux officiel (Banque d’Algérie). Le prix de revient réel utilise le taux du marché parallèle.
+      ⚠️ Tous les calculs sont effectués en DZD officiel. Le droit de timbre fixe de 2 500 DZD est inclus.
     </div>
 
     <div class="sources">
       <p>💱 Taux officiel : <a href="https://www.bank-of-algeria.dz/taux-de-change-journalier/" target="_blank">Banque d’Algérie</a></p>
-      <p>💱 Taux marché noir (indicatif) : <a href="https://www.algeprix.com/change/euro-dinar" target="_blank">algeprix.com</a></p>
       <p>📚 Référence douane : <a href="https://www.douane.gov.dz/" target="_blank">Direction Générale des Douanes</a></p>
     </div>
   </div>
@@ -65,48 +61,58 @@ function calculer() {
   const type = document.getElementById('type').value;
   const motorisation = document.getElementById('motorisation').value;
   const tauxOff = parseFloat(document.getElementById('taux_officiel').value);
-  const tauxNoir = parseFloat(document.getElementById('taux_noir').value);
 
-  if ([cif, tauxOff, tauxNoir].some(isNaN)) {
+  if ([cif, tauxOff].some(isNaN)) {
     alert('Veuillez remplir tous les champs');
     return;
   }
 
+  // Conversion CIF en DZD officiel
+  const cifDZD = cif * tauxOff;
+
+  // Droits de douane selon motorisation
   let tauxDD = 0;
   if (motorisation === 'essence_1800') tauxDD = 0.15;
   if (motorisation === 'essence_plus') tauxDD = 0.30;
   if (motorisation === 'electrique') tauxDD = 0.05;
+  const ddDZD = cifDZD * tauxDD;
 
-  // Calcul sous-composants
-  let dd = cif * tauxDD;
-  let tva = 0.19 * (cif + dd);
-  let tcs = 0.02 * (cif + dd + tva);
-  let taxes = dd + tva + tcs;
+  // TVA 19%
+  const tvaDZD = 0.19 * (cifDZD + ddDZD);
 
+  // TCS 2%
+  const tcsDZD = 0.02 * (cifDZD + ddDZD + tvaDZD);
+
+  // Droit de timbre fixe
+  const timbreDZD = 2500;
+
+  // Total taxes avant réduction
+  const totalTaxesDZD = ddDZD + tvaDZD + tcsDZD + timbreDZD;
+
+  // Réduction si <3 ans
   let reduction = 1;
   if (type === 'moins3') {
     if (motorisation === 'essence_1800') reduction = 0.5;
     if (motorisation === 'essence_plus') reduction = 0.8;
     if (motorisation === 'electrique') reduction = 0.2;
   }
-  let taxesReduites = taxes * reduction;
+  const totalTaxesReduitesDZD = totalTaxesDZD * reduction;
 
-  const dedouanementDZD = taxesReduites * tauxOff;
-  const achatDZD = cif * tauxNoir;
-  const totalReviens = dedouanementDZD + achatDZD;
+  // Prix de revient total
+  const prixTotalDZD = cifDZD + totalTaxesReduitesDZD;
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').innerHTML = `
-    <strong>Détail du calcul :</strong><br><br>
-    • Droits de douane (DD) : <b>${dd.toFixed(2)} €</b><br>
-    • TVA 19% : <b>${tva.toFixed(2)} €</b><br>
-    • TCS 2% : <b>${tcs.toFixed(2)} €</b><br>
-    • Total taxes avant réduction : <b>${taxes.toFixed(2)} €</b><br>
+    <strong>Détail du calcul (DZD officiel) :</strong><br><br>
+    • Prix CIF en DZD : <b>${cifDZD.toLocaleString()}</b><br>
+    • Droits de douane (DD) : <b>${ddDZD.toLocaleString()}</b><br>
+    • TVA 19% : <b>${tvaDZD.toLocaleString()}</b><br>
+    • TCS 2% : <b>${tcsDZD.toLocaleString()}</b><br>
+    • Droit de timbre : <b>${timbreDZD.toLocaleString()}</b><br>
+    • Total taxes avant réduction : <b>${totalTaxesDZD.toLocaleString()}</b><br>
     • Réduction < 3 ans : <b>${(100*(1-reduction)).toFixed(0)}%</b><br>
-    • Total taxes après réduction : <b>${taxesReduites.toFixed(2)} €</b><br><br>
-    💼 Dédouanement (taux officiel) : <b>${dedouanementDZD.toLocaleString()} DZD</b><br>
-    💸 Achat + transport (marché noir) : <b>${achatDZD.toLocaleString()} DZD</b><br><br>
-    🧾 <strong>Prix de revient total :</strong> <b style="font-size:18px">${totalReviens.toLocaleString()} DZD</b>
+    • Total taxes après réduction : <b>${totalTaxesReduitesDZD.toLocaleString()}</b><br><br>
+    🧾 <strong>Prix de revient total :</strong> <b style="font-size:18px">${prixTotalDZD.toLocaleString()}</b>
   `;
 }
 </script>
