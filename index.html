@@ -12,7 +12,7 @@
     input, select { width:100%; padding:8px; margin-top:5px; }
     button { margin-top:20px; padding:12px; width:100%; font-size:16px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; }
     button:hover { background:#1e4ed8; }
-    .result { margin-top:20px; padding:15px; background:#f1f5f9; border-radius:6px; }
+    .result { margin-top:20px; padding:15px; background:#f1f5f9; border-radius:6px; font-size:14px; }
     .small { font-size:12px; color:#555; margin-top:10px; }
     .sources { margin-top:20px; font-size:14px; }
     .sources a { color:#2563eb; text-decoration:none; }
@@ -38,8 +38,8 @@
       <option value="electrique">Électrique</option>
     </select>
 
-    <label>Taux de change officiel (€ → DZD) – Douane</label>
-    <input type="number" id="taux_officiel" placeholder="Ex: 150" />
+    <label>Taux de change officiel (€ → DZD) – Douane (auto)</label>
+    <input type="number" id="taux_officiel" placeholder="Chargement..." readonly />
 
     <label>Taux du marché noir (€ → DZD) – Achat véhicule</label>
     <input type="number" id="taux_noir" placeholder="Ex: 230" />
@@ -60,6 +60,13 @@
   </div>
 
 <script>
+// Récupère automatiquement le taux officiel EUR -> DZD
+fetch('https://api.exchangerate.host/latest?base=EUR&symbols=DZD')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('taux_officiel').value = data.rates.DZD.toFixed(2);
+  });
+
 function calculer() {
   const cif = parseFloat(document.getElementById('cif').value);
   const type = document.getElementById('type').value;
@@ -77,29 +84,36 @@ function calculer() {
   if (motorisation === 'essence_plus') tauxDD = 0.30;
   if (motorisation === 'electrique') tauxDD = 0.05;
 
+  // Calcul sous-composants
   let dd = cif * tauxDD;
   let tva = 0.19 * (cif + dd);
   let tcs = 0.02 * (cif + dd + tva);
-
   let taxes = dd + tva + tcs;
 
+  let reduction = 1;
   if (type === 'moins3') {
-    if (motorisation === 'essence_1800') taxes *= 0.5;
-    if (motorisation === 'essence_plus') taxes *= 0.8;
-    if (motorisation === 'electrique') taxes *= 0.2;
+    if (motorisation === 'essence_1800') reduction = 0.5;
+    if (motorisation === 'essence_plus') reduction = 0.8;
+    if (motorisation === 'electrique') reduction = 0.2;
   }
+  let taxesReduites = taxes * reduction;
 
-  const dedouanementDZD = taxes * tauxOff + 25000;
+  const dedouanementDZD = taxesReduites * tauxOff;
   const achatDZD = cif * tauxNoir;
   const totalReviens = dedouanementDZD + achatDZD;
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').innerHTML = `
-    <strong>Résultat détaillé :</strong><br><br>
+    <strong>Détail du calcul :</strong><br><br>
+    • Droits de douane (DD) : <b>${dd.toFixed(2)} €</b><br>
+    • TVA 19% : <b>${tva.toFixed(2)} €</b><br>
+    • TCS 2% : <b>${tcs.toFixed(2)} €</b><br>
+    • Total taxes avant réduction : <b>${taxes.toFixed(2)} €</b><br>
+    • Réduction < 3 ans : <b>${(100*(1-reduction)).toFixed(0)}%</b><br>
+    • Total taxes après réduction : <b>${taxesReduites.toFixed(2)} €</b><br><br>
     💼 Dédouanement (taux officiel) : <b>${dedouanementDZD.toLocaleString()} DZD</b><br>
     💸 Achat + transport (marché noir) : <b>${achatDZD.toLocaleString()} DZD</b><br><br>
-    🧾 <strong>Prix de revient total :</strong><br>
-    <b style="font-size:18px">${totalReviens.toLocaleString()} DZD</b>
+    🧾 <strong>Prix de revient total :</strong> <b style="font-size:18px">${totalReviens.toLocaleString()} DZD</b>
   `;
 }
 </script>
