@@ -38,8 +38,8 @@
       <option value="electrique">Électrique</option>
     </select>
 
-    <label>Taux de change officiel (€ → DZD) – Douane (auto)</label>
-    <input type="number" id="taux_officiel" placeholder="Chargement..." readonly />
+    <label>Taux de change officiel (€ → DZD) – Douane</label>
+    <input type="number" id="taux_officiel" placeholder="Ex: 150" />
 
     <label>Taux du marché noir (€ → DZD) – Achat véhicule</label>
     <input type="number" id="taux_noir" placeholder="Ex: 230" />
@@ -60,13 +60,6 @@
   </div>
 
 <script>
-// Récupère automatiquement le taux officiel EUR -> DZD
-fetch('https://api.exchangerate.host/latest?base=EUR&symbols=DZD')
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('taux_officiel').value = data.rates.DZD.toFixed(2);
-  });
-
 function calculer() {
   const cif = parseFloat(document.getElementById('cif').value);
   const type = document.getElementById('type').value;
